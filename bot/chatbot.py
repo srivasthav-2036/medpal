@@ -44,16 +44,16 @@ SYSTEM_PROMPT = (
     Always state the referances for your answer in the end. If you cant state the referances,
     reply with "I cant find any good referances" instead of making up some answer.  
 
-    ALWAYS give your answer IN BULLET FORMAT.
+    ALWAYS give your answer IN BULLET FORMAT.give small and COMPLETE ANSWERS.Always intoduce yourself and greet the user before giving your answer.
     """
 )
 
 
 def _create_chain():
     llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash-lite", 
+        model="gemini-2.0-flash", 
         temperature=0.7,
-        max_output_tokens=500
+        max_output_tokens=2048
     )
 
     memory = ConversationBufferMemory(memory_key="history", return_messages=True)
@@ -97,6 +97,7 @@ def get_bot_reply(session_id: str, user_message: str) -> str:
     # Generate model reply
     try:
         response = chain.predict(input=f"{SYSTEM_PROMPT}\nUser: {user_message}")
+        print(response.strip())
         return response.strip()
     except Exception as e:
         return f"An error occurred while generating a response: {e}"
