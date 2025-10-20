@@ -1,15 +1,26 @@
-from flask import Flask,render_template,request,redirect, jsonify, send_from_directory
+from flask import Flask,render_template,request,redirect, jsonify, send_from_directory,redirect
 from markdown import markdown 
 from bot.chatbot import initialize_chat_session, get_bot_reply
-import pickle
+import joblib,sqlite3
+
+def initialize_database():
+    conn = sqlite3.connect('Databases/users.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS users
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  email TEXT UNIQUE NOT NULL,
+                  password TEXT NOT NULL)''')
+    conn.commit()
+    conn.close()
 
 app=Flask(__name__)
 MODEL_PARAMS = {
     "Diabetes": [("Gender",['Male','Female']),("Age",[]),("Urea",[]), ("Cr",[]), ("HbA1c",[]), ("Cholestrol",[]),("TG",[]),("HDL",[]),("LDL",[]), ("VLDL",[]),("BMI",[])],
     "Heart Disease": [("Age",[]), ("Gender",['Male','Female']), ("Blood Pressure",[]), ("Cholesterol Level",[]), ("Exercise Habits",['High' ,'Low' ,'Medium']),("Smoking",['Yes','No']),("Family heart disease",['Yes','No']),("Diabetes",['No','Yes']),("BMI",[]),("High BP",['Yes','No']),("Low HDL Cholestrol",['Yes','No']),("High LDL Cholestrol",['Yes','No']),("Alcohol Consumption",['High' ,'Medium' ,'Low' ]),("Stress Level",['High','Medium' ,'Low']),("Sleep Hours",[]),("Sugar Consumption",['High', 'Medium','Low']),("Triglyceride Levels",[]),("Fasting Blood Sugar",[]),("CRP Levels",[]),("Homocysteine Levels",[])],
     "Liver Disease": [("Age",[]), ("Bilirubin",[]), ("AlkPhos",[]), ("Albumin",[])],
-    "Kidney Disease": ["Creatinine", "BP", "Sodium", "Potassium"],
-    "Lung Cancer": ["Gene_Mutation_Score", "Tumor_Size", "Age"]
+    "Kidney Disease": [('Age',[]), ('bp',[]), ('sg',[]), ('al',[]), ('su',[]), ("rbc",[ 'Normal' ,'Abnormal']),("pc",['Normal','Abnormal' ]),("pcc",['Notpresent' ,'Present' ]),("ba",['Notpresent' ,'Present' ]), ('bgr',[]), ('bu',[]),
+       ('sc',[]), ('sod',[]), ('pot',[]), ('hemo',[]), ('pcv',[]), ('wc',[]), ('rc',[]),("htn",['Yes', 'No' ]),("dm",['Yes' ,'No' ]),("cad",['No', 'Yes' ]),("appet",['Good' ,'Poor']),("pe",['No' ,'Yes' ]),("ane",['No' ,'Yes'])],
+    "Lung Cancer": [("Gene_Mutation_Score",[]), ("Tumor_Size",[]), ("Age",[])]
 }
 @app.route('/')
 def home():
@@ -19,13 +30,41 @@ def home():
 def login():
     email = request.form["email"]
     password = request.form["password"]
+    conn=sqlite3.connect('Databases/users.db')
+    c=conn.cursor()
+    c.execute("SELECT * FROM users WHERE email=?", (email,))
+    user = c.fetchone()
+    conn.close()
+    print("user: ",user)
     # Verify credentials logic here
-    return redirect("/predictions")
+    error=""
+    if not user:
+        error="Not a valid user. Please register first."
+    elif user[2] != password:
+        error="Invalid password. Please try again."
+    return redirect('/predictions') if not error else render_template('index.html',error=error)  # Invalid credentials
 
-@app.route("/register")
+@app.route("/register",methods=["GET", "POST"])
 def register():
-    return render_template("register.html")
-
+    if request.method == "POST":
+        email = request.form["email"]
+        password = request.form["password"]
+        confirm_password = request.form["confirm_password"]
+        if password != confirm_password:
+            return redirect('/register',error="Passwords Do not match")  # Passwords do not match
+        conn=sqlite3.connect('Databases/users.db')
+        c=conn.cursor()
+        c.execute("SELECT * FROM users WHERE email=?", (email,))
+        user = c.fetchone()
+        print("users: ",user)
+        if user:
+            conn.close()
+            return render_template('register.html',error=f"User with email {email} already exists. Please try with different email")  # User already exists
+        c.execute("INSERT INTO users (email, password) VALUES (?, ?)", (email, password))
+        conn.commit()
+        conn.close()
+        return redirect('/')  # Registration successful
+    return render_template("register.html") 
 
 @app.route('/predictions', methods=["GET", "POST"])
 def predict():
@@ -42,8 +81,14 @@ def predict_result():
 
     inputs = []
     i=0
+    c=0
+    if model_name =="Lung Cancer":
+        c=1
     params=MODEL_PARAMS.get(model_name, [])
     for k,v in request.form.items():
+        print("key :",k)
+        print("value :",v)
+        
         if k != "model_name":
             if params[i][1]:  # If there are possible values, it's categorical
                 if v=="Male" or v=="Female":
@@ -53,9 +98,9 @@ def predict_result():
                         inputs.append(0)
                 elif v=="Yes" or v=="No":
                     if v=="Yes":
-                        inputs.append(1)
+                        inputs.append(c+1)
                     else:
-                        inputs.append(0)
+                        inputs.append(c+0)
                 elif v in ["High", "Medium", "Low"]:
                     if v=="High":
                         inputs.append(0)
@@ -63,13 +108,32 @@ def predict_result():
                         inputs.append(2)
                     else:
                         inputs.append(1)
+                elif v in ["Normal", "Abnormal"]:
+                    if v=="Abnormal":
+                        inputs.append(0)
+                    else :
+                        inputs.append(1)
+                elif v in ['Notpresent' ,'Present' ]:
+                    if v=="Present":
+                        inputs.append(1)
+                    else:
+                        inputs.append(0)
+                elif v in ['Good','Poor']:
+                    if v=="Good":
+                        inputs.append(0)
+                    else:
+                        inputs.append(1)
+
             else:  # Numerical input
                 inputs.append(float(v))
             i+=1
+            print(inputs)
+        
+    c=0
     print(inputs)
     # Here you can handle model prediction logic
     print("model name : ",model_name)
-    model=pickle.load(open(f'models/{model_name}.pkl', 'rb'))
+    model=joblib.load(open(f'models/{model_name}.joblib', 'rb'))
     res=model.predict([inputs])
     print("your o/p : ",res)
     prediction=""
@@ -114,4 +178,5 @@ def about():
     return render_template('about.html')
 
 if __name__=='__main__':
+    initialize_database()
     app.run(debug=True)
