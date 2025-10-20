@@ -38,12 +38,47 @@ def predict():
 @app.route("/predict_result", methods=["POST"])
 def predict_result():
     model_name = request.form.get("model_name")
-    inputs = {k: v for k, v in request.form.items() if k != "model_name"}
+    params = MODEL_PARAMS.get(model_name, [])
+
+    inputs = []
+    i=0
+    params=MODEL_PARAMS.get(model_name, [])
+    for k,v in request.form.items():
+        if k != "model_name":
+            if params[i][1]:  # If there are possible values, it's categorical
+                if v=="Male" or v=="Female":
+                    if v=="Male":
+                        inputs.append(1)
+                    else:
+                        inputs.append(0)
+                elif v=="Yes" or v=="No":
+                    if v=="Yes":
+                        inputs.append(1)
+                    else:
+                        inputs.append(0)
+                elif v in ["High", "Medium", "Low"]:
+                    if v=="High":
+                        inputs.append(0)
+                    elif v=="Medium":
+                        inputs.append(2)
+                    else:
+                        inputs.append(1)
+            else:  # Numerical input
+                inputs.append(float(v))
+            i+=1
     print(inputs)
     # Here you can handle model prediction logic
-    model=pickle.load(open(f'models/{model_name}_model.pkl', 'rb'))
-    prediction = f"Predicted {model_name} result based on inputs: {inputs}"
-    return f"<h2>{prediction}</h2><a href='/predictions'>Back</a>"
+    print("model name : ",model_name)
+    model=pickle.load(open(f'models/{model_name}.pkl', 'rb'))
+    res=model.predict([inputs])
+    print("your o/p : ",res)
+    prediction=""
+    if res[0]==1:
+        prediction=f"The person is likely to have the {model_name}."
+    else:
+        prediction=f"The person is not likely to have the {model_name}."
+   
+    return render_template("predict.html", prediction=prediction,model_name=model_name,params=params)
 
 # chatbot api
 @app.route('/chatbot', methods=['GET', 'POST'])
