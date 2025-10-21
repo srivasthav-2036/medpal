@@ -19,7 +19,7 @@
     .container {
       text-align: center;
       padding: 60px 20px 20px 20px;
-      margin-top: 50px;
+      margin-top: 0px;
     }
 
     .login-container {
@@ -27,6 +27,7 @@
       justify-content: center;
       align-items: center;
       flex: 1;
+      margin-top: 100px;
     }
 
     .login-card {
@@ -52,6 +53,13 @@
     .text-muted a:hover {
       text-decoration: underline;
     }
+    
+    .logout-btn {
+      position: fixed;      /* Always visible in top-right corner */
+      top: 60px;
+      right: 30px;
+      z-index: 999; 
+    }
   </style>
 </head>
 <body>
@@ -59,13 +67,31 @@
   <!-- Navbar -->
   {% include '/partials/header.html' %}
 
+
   <!-- Welcome text -->
-  <div class="container">
-    <h2 class="mb-3">Welcome to AI Health Assistant</h2>
-    <p>An integrated AI-powered platform combining medical chatbots, disease prediction, document analysis, and lifestyle guidance.</p>
+  {% if user_login %}
+  <div class="logout-btn">
+    <form action="/logout" method="post">
+      <button type="submit" class="btn btn-danger btn-sm">Logout</button>
+    </form>
   </div>
+  <div class="container">
+  
+    <h4>{{greeting }}! {{ user_login }}</h4>
+    <h2 class="mb-3">Welcome to AI Health Assistant</h2>
+    <p>An integrated AI-powered platform combining medical chatbots, disease prediction, document analysis, and lifestyle
+      guidance.</p>
+  </div>
+  {% endif %}
 
   <!-- Login form -->
+  {% if not user_login %}
+  {% if logout_message %}
+    <div class="alert alert-info text-center" role="alert">
+      {{ logout_message }}
+    </div>
+  {% endif %}
+
   <div class="login-container">
     <div class="login-card">
       <h3 class="text-center mb-4">Login</h3>
@@ -90,6 +116,9 @@
       </p>
     </div>
   </div>
+
+
+  {% endif %}
 
   <!-- Footer -->
   {% include '/partials/footer.html' %}

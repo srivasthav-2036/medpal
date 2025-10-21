@@ -1,8 +1,17 @@
-from flask import Flask,render_template,request,redirect, jsonify, send_from_directory,redirect
+from flask import Flask,render_template,request,redirect, jsonify,url_for, send_from_directory,redirect,session
 from markdown import markdown 
 from bot.chatbot import initialize_chat_session, get_bot_reply
 import joblib,sqlite3
+from datetime import datetime, timedelta
 
+def get_greeting():
+    hour = datetime.now().hour
+    if hour < 12:
+        return "Good Morning"
+    elif hour < 18:
+        return "Good Afternoon"
+    else:
+        return "Good Evening"
 def initialize_database():
     conn = sqlite3.connect('Databases/users.db')
     c = conn.cursor()
@@ -14,17 +23,24 @@ def initialize_database():
     conn.close()
 
 app=Flask(__name__)
+app.secret_key = 'hello'
 MODEL_PARAMS = {
     "Diabetes": [("Gender",['Male','Female']),("Age",[]),("Urea",[]), ("Cr",[]), ("HbA1c",[]), ("Cholestrol",[]),("TG",[]),("HDL",[]),("LDL",[]), ("VLDL",[]),("BMI",[])],
     "Heart Disease": [("Age",[]), ("Gender",['Male','Female']), ("Blood Pressure",[]), ("Cholesterol Level",[]), ("Exercise Habits",['High' ,'Low' ,'Medium']),("Smoking",['Yes','No']),("Family heart disease",['Yes','No']),("Diabetes",['No','Yes']),("BMI",[]),("High BP",['Yes','No']),("Low HDL Cholestrol",['Yes','No']),("High LDL Cholestrol",['Yes','No']),("Alcohol Consumption",['High' ,'Medium' ,'Low' ]),("Stress Level",['High','Medium' ,'Low']),("Sleep Hours",[]),("Sugar Consumption",['High', 'Medium','Low']),("Triglyceride Levels",[]),("Fasting Blood Sugar",[]),("CRP Levels",[]),("Homocysteine Levels",[])],
     "Liver Disease": [("Age",[]), ("Bilirubin",[]), ("AlkPhos",[]), ("Albumin",[])],
     "Kidney Disease": [('Age',[]), ('bp',[]), ('sg',[]), ('al',[]), ('su',[]), ("rbc",[ 'Normal' ,'Abnormal']),("pc",['Normal','Abnormal' ]),("pcc",['Notpresent' ,'Present' ]),("ba",['Notpresent' ,'Present' ]), ('bgr',[]), ('bu',[]),
        ('sc',[]), ('sod',[]), ('pot',[]), ('hemo',[]), ('pcv',[]), ('wc',[]), ('rc',[]),("htn",['Yes', 'No' ]),("dm",['Yes' ,'No' ]),("cad",['No', 'Yes' ]),("appet",['Good' ,'Poor']),("pe",['No' ,'Yes' ]),("ane",['No' ,'Yes'])],
-    "Lung Cancer": [("Gene_Mutation_Score",[]), ("Tumor_Size",[]), ("Age",[])]
+    "Lung Cancer": [("Gender",['Male','Female']), ("Age",[]), ("Smoking",['Yes','No']), ("Yellow Fingers",['Yes','No']), ("Anxiety",['Yes','No']), ("Peer Pressure",['Yes','No']), ("Chronic Disease",['Yes','No']), ("Fatigue",['Yes','No']), ("Allergy",['Yes','No']), ("Wheezing",['Yes','No']), ("Alcohol Consumption",['Yes','No']), ("Coughing",['Yes','No']), ("Shortness of Breath",['Yes','No']), ("Swallowing Difficulty",['Yes','No']), ("Chest Pain",['Yes','No'])]
 }
 @app.route('/')
 def home():
+    user = session.get('user')
+    if user:
+        username = user.split('@')[0].upper()
+        greeting = get_greeting()
+        return render_template('index.html', user_login=username, greeting=greeting)
     return render_template('index.html')
+
 
 @app.route("/login", methods=["POST"])
 def login():
@@ -38,11 +54,15 @@ def login():
     print("user: ",user)
     # Verify credentials logic here
     error=""
+    
     if not user:
         error="Not a valid user. Please register first."
     elif user[2] != password:
         error="Invalid password. Please try again."
-    return redirect('/predictions') if not error else render_template('index.html',error=error)  # Invalid credentials
+    if not error:
+        session['user']=email
+        return redirect(url_for('home'))  # Successful login
+    return render_template('index.html',error=error)  # Invalid credentials
 
 @app.route("/register",methods=["GET", "POST"])
 def register():
@@ -51,7 +71,7 @@ def register():
         password = request.form["password"]
         confirm_password = request.form["confirm_password"]
         if password != confirm_password:
-            return redirect('/register',error="Passwords Do not match")  # Passwords do not match
+            return render_template('register.html',error="Passwords Do not match")  # Passwords do not match
         conn=sqlite3.connect('Databases/users.db')
         c=conn.cursor()
         c.execute("SELECT * FROM users WHERE email=?", (email,))
@@ -66,8 +86,16 @@ def register():
         return redirect('/')  # Registration successful
     return render_template("register.html") 
 
+@app.route("/logout", methods=["POST"])
+def logout():
+    if 'user' in session:
+        session.pop('user', None)
+    return render_template('index.html',logout_message="Come back soon!")  # Redirect to home page after logout
+
 @app.route('/predictions', methods=["GET", "POST"])
 def predict():
+    if 'user' not in session:
+        return redirect(url_for('home'))
     if request.method == "POST":
         model_name = request.form.get("model_name")
         params = MODEL_PARAMS.get(model_name, [])
@@ -133,9 +161,12 @@ def predict_result():
     print(inputs)
     # Here you can handle model prediction logic
     print("model name : ",model_name)
+    print(len(params),len(inputs))
+    if len(inputs)!=len(params):
+        return render_template("predict.html", error=" Please provide all inputs.",model_name=model_name,params=params)
     model=joblib.load(open(f'models/{model_name}.joblib', 'rb'))
     res=model.predict([inputs])
-    print("your o/p : ",res)
+    print("model o/p : ",res)
     prediction=""
     if res[0]==1:
         prediction=f"The person is likely to have the {model_name}."
@@ -147,6 +178,8 @@ def predict_result():
 # chatbot api
 @app.route('/chatbot', methods=['GET', 'POST'])
 def chatbot():
+    if 'user' not in session:
+        return redirect(url_for('home'))
     reply_html = ""
     user_message = ""
     session_id = "webform"
