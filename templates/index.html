@@ -19,7 +19,7 @@
     .container {
       text-align: center;
       padding: 60px 20px 20px 20px;
-      margin-top: 80px;
+      margin-top: 50px;
     }
 
     .hero-section {
@@ -130,7 +130,7 @@
   </div>
   {% endif %}
 
-
+  {% if not user_login %}
   <div class="login-container d-flex justify-content-center align-items-center flex-fill">
     <div class="login-card">
       <h3 class="text-center mb-4">Login</h3>
@@ -155,7 +155,7 @@
       </p>
     </div>
   </div>
-
+  {% endif %}
 
   {% include '/partials/footer.html' %}
 
