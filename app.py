@@ -1,8 +1,21 @@
-from flask import Flask,render_template,request,redirect, jsonify,url_for, send_from_directory,redirect,session
+from flask import Flask,render_template,request,redirect, jsonify,url_for,redirect,session,flash
 from markdown import markdown 
 from bot.chatbot import initialize_chat_session, get_bot_reply
 import joblib,sqlite3
 from datetime import datetime, timedelta
+from functools import wraps
+
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get("user"):
+            flash("You need to login first!","danger")
+            return redirect(url_for("home"))  # redirect to home/login page
+        return f(*args, **kwargs)
+    return decorated_function
+
 
 def get_greeting():
     hour = datetime.now().hour
@@ -33,6 +46,7 @@ MODEL_PARAMS = {
     "Lung Cancer": [("Gender",['Male','Female']), ("Age",[]), ("Smoking",['Yes','No']), ("Yellow Fingers",['Yes','No']), ("Anxiety",['Yes','No']), ("Peer Pressure",['Yes','No']), ("Chronic Disease",['Yes','No']), ("Fatigue",['Yes','No']), ("Allergy",['Yes','No']), ("Wheezing",['Yes','No']), ("Alcohol Consumption",['Yes','No']), ("Coughing",['Yes','No']), ("Shortness of Breath",['Yes','No']), ("Swallowing Difficulty",['Yes','No']), ("Chest Pain",['Yes','No'])]
 }
 @app.route('/')
+
 def home():
     user = session.get('user')
     if user:
@@ -90,9 +104,11 @@ def register():
 def logout():
     if 'user' in session:
         session.pop('user', None)
-    return render_template('index.html',logout_message="Come back soon!")  # Redirect to home page after logout
+        flash("Come back soon!", "info")
+        return redirect(url_for('home'))  # Redirect to home page after logout
 
 @app.route('/predictions', methods=["GET", "POST"])
+@login_required
 def predict():
     if 'user' not in session:
         return redirect(url_for('home'))
@@ -177,6 +193,7 @@ def predict_result():
 
 # chatbot api
 @app.route('/chatbot', methods=['GET', 'POST'])
+@login_required
 def chatbot():
     if 'user' not in session:
         return redirect(url_for('home'))
