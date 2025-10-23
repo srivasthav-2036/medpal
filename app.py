@@ -4,9 +4,26 @@ from bot.chatbot import initialize_chat_session, get_bot_reply
 import joblib,sqlite3
 from datetime import datetime, timedelta
 from functools import wraps
+import os
+from werkzeug.utils import secure_filename
+from ai_modules.image_processor import ImageProcessor
+from ai_modules.pdf_processor import PDFProcessor
+import uuid
 
 
+app=Flask(__name__)
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
 
+# Create upload directory if it doesn't exist
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs('vector_stores', exist_ok=True)
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -35,11 +52,10 @@ def initialize_database():
     conn.commit()
     conn.close()
 
-app=Flask(__name__)
 app.secret_key = 'hello'
 MODEL_PARAMS = {
     "Diabetes": [("Gender",['Male','Female']),("Age",[]),("Urea",[]), ("Cr",[]), ("HbA1c",[]), ("Cholestrol",[]),("TG",[]),("HDL",[]),("LDL",[]), ("VLDL",[]),("BMI",[])],
-    "Heart Disease": [("Age",[]), ("Gender",['Male','Female']), ("Blood Pressure",[]), ("Cholesterol Level",[]), ("Exercise Habits",['High' ,'Low' ,'Medium']),("Smoking",['Yes','No']),("Family heart disease",['Yes','No']),("Diabetes",['No','Yes']),("BMI",[]),("High BP",['Yes','No']),("Low HDL Cholestrol",['Yes','No']),("High LDL Cholestrol",['Yes','No']),("Alcohol Consumption",['High' ,'Medium' ,'Low' ]),("Stress Level",['High','Medium' ,'Low']),("Sleep Hours",[]),("Sugar Consumption",['High', 'Medium','Low']),("Triglyceride Levels",[]),("Fasting Blood Sugar",[]),("CRP Levels",[]),("Homocysteine Levels",[])],
+    "Heart Disease": [("Age",[]), ("Blood Pressure",[]), ("Cholesterol Level",[]),("BMI",[]),("Sleep Hours",[]),("Triglyceride Levels",[]),("Fasting Blood Sugar",[]),("CRP Levels",[]),("Homocysteine Levels",[]),  ("Gender_Male",['Yes','No']), ("Gender_Female",['Yes','No']),("Smoking_No",['Yes','No']),("Smoking_Yes",['Yes','No']),("Family heart disease_Yes",['Yes','No']),("Family heart disease_No",['Yes','No']),("Diabetes_Yes",['No','Yes']),("Diabetes_No",['No','Yes']),("High BP_No",['Yes','No']),("High BP_Yes",['Yes','No']),("Low HDL Cholestrol_",['Yes','No']),("High HDL Cholestrol",['Yes','No']),("High LDL Cholestrol_",['Yes','No']),("Low LDL Cholestrol",['Yes','No']),("Exercise Habits",['Low','Medium','High']),("Stress Level",['High','Medium' ,'Low']),("Sugar Consumption",['High', 'Medium','Low']),("Alcohlol Consumption",[])],
     "Liver Disease": [("Age",[]), ("Bilirubin",[]), ("AlkPhos",[]), ("Albumin",[])],
     "Kidney Disease": [('Age',[]), ('bp',[]), ('sg',[]), ('al',[]), ('su',[]), ("rbc",[ 'Normal' ,'Abnormal']),("pc",['Normal','Abnormal' ]),("pcc",['Notpresent' ,'Present' ]),("ba",['Notpresent' ,'Present' ]), ('bgr',[]), ('bu',[]),
        ('sc',[]), ('sod',[]), ('pot',[]), ('hemo',[]), ('pcv',[]), ('wc',[]), ('rc',[]),("htn",['Yes', 'No' ]),("dm",['Yes' ,'No' ]),("cad",['No', 'Yes' ]),("appet",['Good' ,'Poor']),("pe",['No' ,'Yes' ]),("ane",['No' ,'Yes'])],
@@ -221,6 +237,92 @@ def chat():
     reply = get_bot_reply(session_id, user_message)
 
     return jsonify({"reply": reply})
+
+# xray api
+
+@app.route('/xray')
+@login_required
+def xray():
+    return render_template('xray.html')
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        # Add unique identifier to avoid conflicts
+        unique_filename = f"{uuid.uuid4()}_{filename}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        file.save(filepath)
+        
+        # Store file info in session
+        if 'uploaded_files' not in session:
+            session['uploaded_files'] = []
+        session['uploaded_files'].append({
+            'filename': unique_filename,
+            'original_name': filename,
+            'filepath': filepath,
+            'type': filename.rsplit('.', 1)[1].lower()
+        })
+        
+        return jsonify({'message': 'File uploaded successfully', 'filename': unique_filename})
+    
+    return jsonify({'error': 'Invalid file type'}), 400
+
+@app.route('/process', methods=['POST'])
+def process_files():
+    data = request.get_json()
+    file_type = data.get('type')
+    
+    if file_type == 'image':
+        processor = ImageProcessor()
+        result = processor.process_image(session.get('uploaded_files', []))
+        return jsonify({'message': 'Image processed successfully', 'result': result})
+    
+    elif file_type == 'pdf':
+        processor = PDFProcessor()
+        result = processor.process_pdfs(session.get('uploaded_files', []))
+        return jsonify({'message': 'PDFs processed successfully', 'result': result})
+    
+    return jsonify({'error': 'Invalid file type'}), 400
+
+@app.route('/ask', methods=['POST'])
+def ask_question():
+    data = request.get_json()
+    question = data.get('question')
+    file_type = data.get('type')
+    
+    if not question:
+        return jsonify({'error': 'No question provided'}), 400
+    
+    try:
+        if file_type == 'image':
+            processor = ImageProcessor()
+            response = processor.answer_question(question, session.get('uploaded_files', []))
+        elif file_type == 'pdf':
+            processor = PDFProcessor()
+            response = processor.answer_question(question)
+        else:
+            return jsonify({'error': 'Invalid file type'}), 400
+        
+        return jsonify({'response': response})
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/clear', methods=['POST'])
+def clear_session():
+    session.clear()
+    return jsonify({'message': 'Session cleared'})
+
+
+
 
 # about api
 @app.route('/about')
