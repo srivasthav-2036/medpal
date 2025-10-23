@@ -228,7 +228,7 @@ class PDFProcessor:
             docs = new_db.similarity_search(user_question)
             
             chain = self.get_conversational_chain()
-            response = chain({"input_documents": docs, "question": user_question}, return_only_outputs=True)
+            response = chain.invoke({"input_documents": docs, "question": user_question})
             return response["output_text"]
         
         except Exception as e:

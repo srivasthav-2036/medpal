@@ -277,31 +277,47 @@ def upload_file():
 
 @app.route('/process', methods=['POST'])
 def process_files():
-    data = request.get_json()
-    file_type = data.get('type')
+    try:
+        data = request.get_json()
+        file_type = data.get('type')
+        
+        print(f"Processing files of type: {file_type}")
+        print(f"Uploaded files in session: {session.get('uploaded_files', [])}")
+        
+        if file_type == 'image':
+            processor = ImageProcessor()
+            result = processor.process_image(session.get('uploaded_files', []))
+            print(f"Image processing result: {result}")
+            return jsonify({'message': 'Image processed successfully', 'result': result})
+        
+        elif file_type == 'pdf':
+            processor = PDFProcessor()
+            print("Starting PDF processing...")
+            result = processor.process_pdfs(session.get('uploaded_files', []))
+            print(f"PDF processing result: {result}")
+            return jsonify({'message': 'PDFs processed successfully', 'result': result})
+        
+        return jsonify({'error': 'Invalid file type'}), 400
     
-    if file_type == 'image':
-        processor = ImageProcessor()
-        result = processor.process_image(session.get('uploaded_files', []))
-        return jsonify({'message': 'Image processed successfully', 'result': result})
-    
-    elif file_type == 'pdf':
-        processor = PDFProcessor()
-        result = processor.process_pdfs(session.get('uploaded_files', []))
-        return jsonify({'message': 'PDFs processed successfully', 'result': result})
-    
-    return jsonify({'error': 'Invalid file type'}), 400
+    except Exception as e:
+        print(f"Error in process_files: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Processing failed: {str(e)}'}), 500
 
 @app.route('/ask', methods=['POST'])
 def ask_question():
-    data = request.get_json()
-    question = data.get('question')
-    file_type = data.get('type')
-    
-    if not question:
-        return jsonify({'error': 'No question provided'}), 400
-    
     try:
+        data = request.get_json()
+        question = data.get('question')
+        file_type = data.get('type')
+        
+        print(f"Question: {question}")
+        print(f"File type: {file_type}")
+        
+        if not question:
+            return jsonify({'error': 'No question provided'}), 400
+        
         if file_type == 'image':
             processor = ImageProcessor()
             response = processor.answer_question(question, session.get('uploaded_files', []))
@@ -311,9 +327,13 @@ def ask_question():
         else:
             return jsonify({'error': 'Invalid file type'}), 400
         
+        print(f"Response: {response}")
         return jsonify({'response': response})
     
     except Exception as e:
+        print(f"Error in ask_question: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/clear', methods=['POST'])
