@@ -388,7 +388,12 @@
             `;
 
             // Determine file type for processing
-            const fileType = uploadedFiles.some(f => f.type.startsWith('image/')) ? 'image' : 'pdf';
+            // Check if any uploaded files are images based on file extension
+            const hasImages = uploadedFiles.some(f => {
+                const fileName = f.name.toLowerCase();
+                return fileName.endsWith('.png') || fileName.endsWith('.jpg') || fileName.endsWith('.jpeg');
+            });
+            const fileType = hasImages ? 'image' : 'pdf';
 
             fetch('/ask', {
                 method: 'POST',

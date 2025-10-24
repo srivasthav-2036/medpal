@@ -351,4 +351,14 @@ def about():
 
 if __name__=='__main__':
     initialize_database()
-    app.run(debug=True)
+    # Use environment variables for configuration
+    import os
+    debug_mode = os.environ.get('FLASK_DEBUG', 'True').lower() == 'true'
+    
+    # Disable file watching to prevent restarts from AI library file changes
+    app.run(
+        debug=debug_mode, 
+        host='127.0.0.1', 
+        port=5000,
+        use_reloader=False  # This prevents the watchdog restarts
+    )

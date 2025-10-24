@@ -31,7 +31,8 @@ class ImageProcessor:
         
         results = []
         for file_info in uploaded_files:
-            if file_info['type'] in ['png', 'jpg', 'jpeg']:
+            file_type = file_info.get('type', '').lower()
+            if file_type in ['png', 'jpg', 'jpeg']:
                 try:
                     image = Image.open(file_info['filepath'])
                     response = self.get_gemini_response("""
@@ -59,7 +60,7 @@ class ImageProcessor:
         
         # For simplicity, we'll analyze the first image
         # In a production system, you might want to handle multiple images
-        image_files = [f for f in uploaded_files if f['type'] in ['png', 'jpg', 'jpeg']]
+        image_files = [f for f in uploaded_files if f.get('type', '').lower() in ['png', 'jpg', 'jpeg']]
         
         if not image_files:
             return "No valid image files found"
