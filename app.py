@@ -9,7 +9,7 @@ from werkzeug.utils import secure_filename
 from ai_modules.image_processor import ImageProcessor
 from ai_modules.pdf_processor import PDFProcessor
 import uuid
-
+from lifestyle_chat import get_chat_response
 
 app=Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
@@ -341,8 +341,19 @@ def clear_session():
     session.clear()
     return jsonify({'message': 'Session cleared'})
 
+# lifestyle api
 
+@app.route('/lifestyle')
+@login_required
+def lifestyle():
+    return render_template('lifestyle.html')
 
+@app.route("/get-response", methods=["POST"])
+def get_response():
+    data = request.get_json()
+    user_query = data.get("query", "")
+    result = get_chat_response(user_query)
+    return jsonify({"response": result})
 
 # about api
 @app.route('/about')
