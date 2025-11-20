@@ -3,8 +3,7 @@ from PyPDF2 import PdfReader
 import pdfplumber
 import fitz  # PyMuPDF
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings
-import google.generativeai as genai
+from langchain_huggingface import HuggingFaceEmbeddingsimport google.generativeai as genai
 from langchain_community.vectorstores import FAISS
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
