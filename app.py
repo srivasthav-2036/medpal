@@ -55,7 +55,28 @@ def initialize_database():
 app.secret_key = 'hello'
 MODEL_PARAMS = {
     "Diabetes": [("Gender",['Male','Female']),("Age",[]),("Urea",[]), ("Cr",[]), ("HbA1c",[]), ("Cholestrol",[]),("TG",[]),("HDL",[]),("LDL",[]), ("VLDL",[]),("BMI",[])],
-    "Heart Disease": [("Age",[]), ("Blood Pressure",[]), ("Cholesterol Level",[]),("BMI",[]),("Sleep Hours",[]),("Triglyceride Levels",[]),("Fasting Blood Sugar",[]),("CRP Levels",[]),("Homocysteine Levels",[]),  ("Gender_Male",['Yes','No']), ("Gender_Female",['Yes','No']),("Smoking_No",['Yes','No']),("Smoking_Yes",['Yes','No']),("Family heart disease_Yes",['Yes','No']),("Family heart disease_No",['Yes','No']),("Diabetes_Yes",['No','Yes']),("Diabetes_No",['No','Yes']),("High BP_No",['Yes','No']),("High BP_Yes",['Yes','No']),("Low HDL Cholestrol_",['Yes','No']),("High HDL Cholestrol",['Yes','No']),("High LDL Cholestrol_",['Yes','No']),("Low LDL Cholestrol",['Yes','No']),("Exercise Habits",['Low','Medium','High']),("Stress Level",['High','Medium' ,'Low']),("Sugar Consumption",['High', 'Medium','Low']),("Alcohlol Consumption",[])],
+    "Heart Disease": [
+    ("Age", []),
+    ("Gender", ['Male', 'Female']),
+    ("Blood Pressure", []),
+    ("Cholesterol Level", []),
+    ("Exercise Habits", ['High', 'Low', 'Medium']),
+    ("Smoking", ['Yes', 'No']),
+    ("Family Heart Disease", ['Yes', 'No']),
+    ("Diabetes", ['No', 'Yes']),
+    ("BMI", []),
+    ("High Blood Pressure", ['Yes', 'No']),
+    ("Low HDL Cholesterol", ['Yes', 'No']),
+    ("High LDL Cholesterol", ['No', 'Yes']),
+    ("Alcohol Consumption", ['High', 'Medium', 'Low']),
+    ("Stress Level", ['Medium', 'High', 'Low']),
+    ("Sleep Hours", []),
+    ("Sugar Consumption", ['Medium', 'Low', 'High']),
+    ("Triglyceride Level", []),
+    ("Fasting Blood Sugar", []),
+    ("CRP Level", []),
+    ("Homocysteine Level", []),
+    ],
     "Liver Disease": [("Age",[]), ("Bilirubin",[]), ("AlkPhos",[]), ("Albumin",[])],
     "Kidney Disease": [('Age',[]), ('bp',[]), ('sg',[]), ('al',[]), ('su',[]), ("rbc",[ 'Normal' ,'Abnormal']),("pc",['Normal','Abnormal' ]),("pcc",['Notpresent' ,'Present' ]),("ba",['Notpresent' ,'Present' ]), ('bgr',[]), ('bu',[]),
        ('sc',[]), ('sod',[]), ('pot',[]), ('hemo',[]), ('pcv',[]), ('wc',[]), ('rc',[]),("htn",['Yes', 'No' ]),("dm",['Yes' ,'No' ]),("cad",['No', 'Yes' ]),("appet",['Good' ,'Poor']),("pe",['No' ,'Yes' ]),("ane",['No' ,'Yes'])],
@@ -142,8 +163,12 @@ def predict_result():
     inputs = []
     i=0
     c=0
+    h=0
     if model_name =="Lung Cancer":
         c=1
+    elif model_name =="Heart Disease":
+        c=1
+        h=1
     params=MODEL_PARAMS.get(model_name, [])
     for k,v in request.form.items():
         print("key :",k)
@@ -160,7 +185,7 @@ def predict_result():
                     if v=="Yes":
                         inputs.append(c+1)
                     else:
-                        inputs.append(c+0)
+                        inputs.append(c-h)
                 elif v in ["High", "Medium", "Low"]:
                     if v=="High":
                         inputs.append(0)
@@ -190,6 +215,7 @@ def predict_result():
             print(inputs)
         
     c=0
+    h=0
     print(inputs)
     # Here you can handle model prediction logic
     print("model name : ",model_name)
