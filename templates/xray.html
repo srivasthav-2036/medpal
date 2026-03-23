@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Chatbot</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin-top: 50px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+        }
+        .main-content {
+            padding: 30px;
+        }
+        .upload-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 2px dashed #dee2e6;
+            text-align: center;
+        }
+        .upload-section.dragover {
+            border-color: #667eea;
+            background-color: #e3f2fd;
+        }
+        .file-input {
+            display: none;
+        }
+        .upload-btn {
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .upload-btn:hover {
+            background: #5a6fd8;
+        }
+        .file-list {
+            margin-top: 20px;
+            text-align: left;
+        }
+        .file-item {
+            background: white;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .process-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .process-btn:hover {
+            background: #218838;
+        }
+        .chat-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 25px;
+        }
+        .chat-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        .ask-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .ask-btn:hover {
+            background: #0056b3;
+        }
+        .response {
+            background: white;
+            padding: 20px;
+            border-radius: 6px;
+            margin-top: 20px;
+            border-left: 4px solid #28a745;
+            white-space: pre-wrap;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .processing-status {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            border-left: 4px solid #dc3545;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            border-left: 4px solid #28a745;
+        }
+        .clear-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        .clear-btn:hover {
+            background: #c82333;
+        }
+    </style>
+    <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+  >
+</head>
+<body>
+    {% include 'partials/header.html' %}
+    <div class="container">
+        <div class="header">
+            <h1>🏥 Medical Chatbot</h1>
+            <p>Upload your medical documents and ask questions about them</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="upload-section" id="uploadSection">
+                <h3>📁 Upload Medical Documents</h3>
+                <p>Upload X-ray scans, medical reports, or other documents (PDF, PNG, JPG, JPEG)</p>
+                <input type="file" id="fileInput" class="file-input" multiple accept=".pdf,.png,.jpg,.jpeg">
+                <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                    Choose Files
+                </button>
+                <div class="file-list" id="fileList"></div>
+            </div>
+            
+            <div class="chat-section">
+                <h3>💬 Ask Questions</h3>
+                <input type="text" id="questionInput" class="chat-input" placeholder="Ask a question about your medical documents...">
+                <button class="ask-btn" onclick="askQuestion()">Ask Question</button>
+                <button class="clear-btn" onclick="clearSession()">Clear All</button>
+                <div id="response"></div>
+            </div>
+        </div>
+    </div>
+    {% include 'partials/footer.html' %}
+    <script>
+        let uploadedFiles = [];
+        let processedFiles = false;
+
+        // File upload handling
+        document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+        
+        // Drag and drop functionality
+        const uploadSection = document.getElementById('uploadSection');
+        
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+        
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+        
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            handleFiles(files);
+        });
+
+        function handleFileSelect(event) {
+            const files = event.target.files;
+            handleFiles(files);
+        }
+
+        function handleFiles(files) {
+            for (let file of files) {
+                uploadFile(file);
+            }
+        }
+
+        function uploadFile(file) {
+            // Show upload progress
+            const responseDiv = document.getElementById('response');
+            responseDiv.innerHTML = `
+                <div class="processing-status">
+                    <div class="loading-spinner"></div>
+                    <div>Uploading ${file.name}...</div>
+                    <div style="font-size: 14px; color: #666; margin-top: 5px;">
+                        Please wait while your file is being uploaded
+                    </div>
+                </div>
+            `;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showError(data.error);
+                } else {
+                    uploadedFiles.push({
+                        name: file.name,
+                        type: file.type,
+                        size: file.size
+                    });
+                    updateFileList();
+                    showSuccess('File uploaded successfully!');
+                }
+            })
+            .catch(error => {
+                showError('Upload failed: ' + error.message);
+            });
+        }
+
+        function updateFileList() {
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+            
+            uploadedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <span>${file.name} (${formatFileSize(file.size)})</span>
+                    <button class="process-btn" onclick="processFiles('${getFileType(file.type)}')">
+                        Process
+                    </button>
+                `;
+                fileList.appendChild(fileItem);
+            });
+        }
+
+        function getFileType(mimeType) {
+            if (mimeType.startsWith('image/')) return 'image';
+            if (mimeType === 'application/pdf') return 'pdf';
+            return 'unknown';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function processFiles(type) {
+            // Show loading animation with step-by-step progress
+            const responseDiv = document.getElementById('response');
+            responseDiv.innerHTML = `
+                <div class="processing-status">
+                    <div class="loading-spinner"></div>
+                    <div>Processing ${type.toUpperCase()} files...</div>
+                    <div style="font-size: 14px; color: #666; margin-top: 5px;">
+                        ${type === 'pdf' ? 
+                            'Extracting text → Creating chunks → Generating embeddings → Building vector store' : 
+                            'Analyzing image content → Generating insights'
+                        }
+                    </div>
+                    <div style="font-size: 12px; color: #999; margin-top: 8px;">
+                        This may take a few moments depending on file size
+                    </div>
+                </div>
+            `;
+            
+            fetch('/process', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ type: type })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showError(data.error);
+                } else {
+                    processedFiles = true;
+                    showSuccess(data.message);
+                }
+            })
+            .catch(error => {
+                showError('Processing failed: ' + error.message);
+            });
+        }
+
+        function askQuestion() {
+            const question = document.getElementById('questionInput').value.trim();
+            if (!question) {
+                showError('Please enter a question');
+                return;
+            }
+            
+            if (!processedFiles) {
+                showError('Please upload and process files first');
+                return;
+            }
+
+            const responseDiv = document.getElementById('response');
+            responseDiv.innerHTML = `
+                <div class="processing-status">
+                    <div class="loading-spinner"></div>
+                    <div>Analyzing your question...</div>
+                    <div style="font-size: 14px; color: #666; margin-top: 5px;">
+                        Searching documents → Finding relevant content → Generating answer
+                    </div>
+                    <div style="font-size: 12px; color: #999; margin-top: 8px;">
+                        This may take a few seconds
+                    </div>
+                </div>
+            `;
+
+            // Determine file type for processing
+            // Check if any uploaded files are images based on file extension
+            const hasImages = uploadedFiles.some(f => {
+                const fileName = f.name.toLowerCase();
+                return fileName.endsWith('.png') || fileName.endsWith('.jpg') || fileName.endsWith('.jpeg');
+            });
+            const fileType = hasImages ? 'image' : 'pdf';
+
+            fetch('/ask', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    question: question,
+                    type: fileType
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showError(data.error);
+                } else {
+                    responseDiv.innerHTML = `<div class="response">${data.response}</div>`;
+                }
+            })
+            .catch(error => {
+                showError('Failed to get response: ' + error.message);
+            });
+        }
+
+        function clearSession() {
+            fetch('/clear', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                uploadedFiles = [];
+                processedFiles = false;
+                document.getElementById('fileList').innerHTML = '';
+                document.getElementById('response').innerHTML = '';
+                document.getElementById('questionInput').value = '';
+                showSuccess('Session cleared');
+            });
+        }
+
+        function showError(message) {
+            const responseDiv = document.getElementById('response');
+            responseDiv.innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        function showSuccess(message) {
+            const responseDiv = document.getElementById('response');
+            responseDiv.innerHTML = `<div class="success">${message}</div>`;
+        }
+
+        // Allow Enter key to ask question
+        document.getElementById('questionInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                askQuestion();
+            }
+        });
+    </script>
+</body>
+</html>
+

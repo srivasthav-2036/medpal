@@ -4,36 +4,216 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Health Assistant</title>
+
+  <!-- Bootstrap -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <style>
-    body { font-family: "Segoe UI", sans-serif; margin: 0; background: #f4f7fa; }
-    nav {
-      background-color: #007bff; color: white; display: flex; justify-content: space-between;
-      align-items: center; padding: 12px 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    body {
+      background: #f6f6f6;
+      font-family: "Segoe UI", sans-serif;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
     }
-    nav h1 { margin: 0; font-size: 22px; }
-    nav ul { list-style: none; display: flex; margin: 0; padding: 0; }
-    nav li { margin-left: 25px; }
-    nav a { text-decoration: none; color: white; font-weight: 500; transition: 0.3s; }
-    nav a:hover { color: #e3e3e3; }
-    .container { text-align: center; padding: 100px 20px; }
-    h2 { color: #2c3e50; }
+
+    .container {
+      text-align: center;
+      padding: 60px 20px 20px 20px;
+      margin-top: 50px;
+    }
+
+    .hero-section {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      padding: 60px 20px;
+      max-width: 800px;
+      margin: 40px auto;
+      transition: 0.3s ease;
+    }
+
+    .hero-section:hover {
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    .hero-title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #0d6efd;
+    }
+
+    .typing-text {
+      color: #333;
+      font-size: 1.25rem;
+      min-height: 30px;
+      margin-top: 10px;
+      border-right: 3px solid #0d6efd;
+      display: inline-block;
+      white-space: nowrap;
+      overflow: hidden;
+      animation: blink 0.75s step-end infinite;
+    }
+
+    @keyframes blink {
+      50% { border-color: transparent; }
+    }
+
+    .hero-buttons {
+      margin-top: 25px;
+    }
+
+    .hero-buttons a {
+      margin: 5px;
+    }
+
+    .logout-btn {
+      position: fixed;
+      top: 60px;
+      right: 30px;
+      z-index: 999;
+    }
+    #typing-text {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #0d6efd;
+    min-height: 40px;
+    white-space: nowrap;
+  }
+  #typing-text::after {
+    content: "|";
+    animation: blink 0.8s infinite;
+  }
+
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+
+
   </style>
 </head>
 <body>
-  <nav>
-    <h1>AI Health Assistant</h1>
-    <ul>
-      <li><a href="/">Home</a></li>
-      <li><a href="chatbot.html">Chatbot</a></li>
-      <li><a href="/predictions">Disease Prediction</a></li>
-      <li><a href="xray.html">X-Ray Analysis</a></li>
-      <li><a href="lifestyle.html">Lifestyle & Diet</a></li>
-      <li><a href="about.html">About us</a></li>
-    </ul>
-  </nav>
-  <div class="container">
-    <h2>Welcome to AI Health Assistant</h2>
-    <p>An integrated AI-powered platform combining medical chatbots, disease prediction, document analysis, and lifestyle guidance.</p>
+
+  {% include '/partials/header.html' %}
+  <div class="container mt-3">
+    <!-- index.html -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
   </div>
+  
+
+  {% if user_login %}
+  <div class="container">
+    <h4>{{ greeting }}! {{ user_login }}</h4>
+    <h2 class="mb-3">Welcome to Medpal</h2>
+    <h4 id="typing-text" class="text-primary"></h4>
+
+    
+    <div class="hero-section">
+      <h2 class="hero-title">MedPal – Your Intelligent Medical Assistant</h2>
+      <p class="text-muted mt-2">Your one-stop platform for AI-powered healthcare solutions.</p>
+    
+      <div class="hero-buttons">
+        <a href="/chatbot" class="btn btn-primary btn-lg">💬 Try Chatbot</a>
+        <a href="/xray" class="btn btn-outline-primary btn-lg">📄 Upload Report</a>
+      </div>
+    </div>
+
+  </div>
+  {% endif %}
+
+  {% if not user_login %}
+  <div class="login-container d-flex justify-content-center align-items-center flex-fill">
+    <div class="login-card">
+      <h3 class="text-center mb-4">Login</h3>
+      <form action="/login" method="post">
+        <div class="mb-3">
+          <label for="email" class="form-label">Email address</label>
+          <input type="email" class="form-control" id="email" name="email" placeholder="Enter email" required>
+        </div>
+        <div class="mb-3">
+          <label for="password" class="form-label">Password</label>
+          <input type="password" class="form-control" id="password" name="password" placeholder="Enter password" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Login</button>
+      </form>
+      {% if error %}
+      <div class="alert alert-danger mt-3" role="alert">
+        {{ error }}
+      </div>
+      {% endif %}
+      <p class="text-center text-muted mt-3">
+        Not registered? <a href="/register">Create an account</a>
+      </p>
+    </div>
+  </div>
+  {% endif %}
+
+  {% include '/partials/footer.html' %}
+
+  <!-- <script>
+    const text = "Understand your medical reports in seconds.";
+    const typingElement = document.getElementById("typing");
+    let index = 0;
+
+    function typeEffect() {
+      if (index < text.length) {
+        typingElement.textContent += text.charAt(index);
+        index++;
+        setTimeout(typeEffect, 60);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", typeEffect);
+  </script> -->
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+  const features = [
+    "Understand your medical reports in seconds.",
+    "AI Medical Chatbot",
+    "Disease Prediction System",
+    "Medical Document & X-Ray Analysis",
+    "Lifestyle & Diet Guidance"
+  ];
+
+  const typingElement = document.getElementById("typing-text");
+  let featureIndex = 0;
+  let charIndex = 0;
+  let deleting = false;
+
+  function type() {
+    const current = features[featureIndex];
+    if (!deleting) {
+      typingElement.textContent = current.substring(0, charIndex++);
+      if (charIndex > current.length) {
+        deleting = true;
+        setTimeout(type, 1200); // pause before deleting
+        return;
+      }
+    } else {
+      typingElement.textContent = current.substring(0, charIndex--);
+      if (charIndex === 0) {
+        deleting = false;
+        featureIndex = (featureIndex + 1) % features.length;
+      }
+    }
+    setTimeout(type, deleting ? 60 : 70); // smoother typing & deleting
+  }
+
+  document.addEventListener("DOMContentLoaded", type);
+</script>
+
+
 </body>
 </html>
