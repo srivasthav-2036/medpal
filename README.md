@@ -1,5 +1,5 @@
 <p align="center">
-  <h1 align="center">🩺 MedPal — AI-Powered Medical Assistant</h1>
+  <h1 align="center">MedPal — AI-Powered Medical Assistant</h1>
   <p align="center">
     An intelligent healthcare platform that combines machine learning disease prediction, generative AI chatbots, medical image analysis, and personalized lifestyle guidance — all in one place.
   </p>
@@ -16,7 +16,7 @@
 
 ---
 
-## 📖 Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
 - [Features](#features)
@@ -42,35 +42,35 @@
 
 Built with **Flask** on the backend and powered by **Google Gemini** for generative AI capabilities, MedPal is designed to make advanced health technologies approachable for everyone.
 
-> **⚠️ Important:** MedPal is designed for **informational purposes only** and should not replace professional medical advice, diagnosis, or treatment.
+> **Important:** MedPal is designed for **informational purposes only** and should not replace professional medical advice, diagnosis, or treatment.
 
 ---
 
 ## Features
 
-### 🔬 Disease Prediction
+### Disease Prediction
 Predict the likelihood of multiple diseases using machine learning models trained on medical datasets:
 - **Diabetes** — Based on biomarkers like HbA1c, BMI, Cholesterol, Triglycerides, etc.
 - **Heart Disease** — Evaluates 20 risk factors including BP, cholesterol, smoking, stress, and CRP levels.
 - **Kidney Disease** — Comprehensive analysis using 24 clinical parameters (blood, urine, vitals).
 - **Lung Cancer** — Risk assessment based on symptoms and lifestyle factors.
 
-### 🤖 AI Medical Chatbot
+### AI Medical Chatbot
 - Conversational medical assistant powered by **Google Gemini 2.0 Flash** via **LangChain**.
 - Maintains conversation history for contextual follow-ups.
 - Draws knowledge from trusted sources (AIIMS, Medscape, WHO, Planned Parenthood).
 - Returns referenced, bullet-formatted answers.
 
-### 🩻 X-Ray & Medical Document Analysis
+### X-Ray & Medical Document Analysis
 - **Image Analysis** — Upload X-Rays or medical images (PNG, JPG, JPEG) for AI-powered analysis using Google Gemini's vision capabilities.
 - **PDF Analysis** — Upload medical PDFs; the system extracts text (using pdfplumber → PyMuPDF → PyPDF2 fallback chain), chunks it, embeds it with HuggingFace sentence-transformers, stores vectors in **Pinecone**, and enables question-answering over the documents via a RAG pipeline.
 
-### 🥗 Lifestyle & Diet Advisor
+### Lifestyle & Diet Advisor
 - AI-generated personalized diet plans based on health queries.
 - Provides detailed food recommendations with nutritional values and health benefits.
 - Powered by **Gemini 2.5 Flash**.
 
-### 🔐 User Authentication
+### User Authentication
 - Email/password-based registration and login.
 - Session-based authentication with route protection via `@login_required` decorator.
 - SQLite database for user management.
@@ -383,9 +383,9 @@ services:
 
 | | Name | Role |
 |---|---|---|
-| 🧠 | **Yarakaraju Aditya** | Generative AI & Intelligence Systems |
-| 📊 | **Vishnudev Butla** | Machine Learning & Prediction Modeling |
-| 🏗️ | **Srivasthav T** | ML, Backend Development & Web Architecture |
+| | **Yarakaraju Aditya** | Generative AI & Intelligence Systems |
+| | **Vishnudev Butla** | Machine Learning & Prediction Modeling |
+| | **Srivasthav T** | ML, Backend Development & Web Architecture |
 
 ---
 
